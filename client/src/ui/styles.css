@@ -387,6 +387,7 @@ button {
 .spot--active {
   background: rgba(242, 193, 78, 0.18);
   box-shadow: 0 0 0 2px var(--accent);
+  animation: pulse 1.4s ease-in-out infinite;
 }
 
 .spot--top {
@@ -477,43 +478,75 @@ button {
   position: absolute;
   top: 46%;
   left: 50%;
-  width: calc(var(--table-w) * 2.6);
-  height: calc(var(--table-w) * 1.45 * 2.1);
+  width: calc(var(--table-w) * 3);
+  height: calc(var(--table-w) * 1.45 * 2.6);
   transform: translate(-50%, -50%);
 }
 
 .trick__slot {
   position: absolute;
-  animation: deal-in 0.2s ease-out;
+  animation: var(--enter) 0.28s ease-out both;
 }
 
 .trick__slot--bottom {
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
+  --enter: enter-from-bottom;
 }
 
 .trick__slot--top {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
+  --enter: enter-from-top;
 }
 
 .trick__slot--left {
   top: 50%;
   left: 0;
   transform: translateY(-50%) rotate(-6deg);
+  --enter: enter-from-left;
 }
 
 .trick__slot--right {
   top: 50%;
   right: 0;
   transform: translateY(-50%) rotate(6deg);
+  --enter: enter-from-right;
+}
+
+/* Ramassage du pli : les cartes glissent vers le joueur qui l'a remporté. */
+.trick--to-bottom .trick__slot {
+  animation: var(--enter) 0.28s ease-out both, collect-to-bottom 0.4s ease-in 0.85s forwards;
+}
+
+.trick--to-top .trick__slot {
+  animation: var(--enter) 0.28s ease-out both, collect-to-top 0.4s ease-in 0.85s forwards;
+}
+
+.trick--to-left .trick__slot {
+  animation: var(--enter) 0.28s ease-out both, collect-to-left 0.4s ease-in 0.85s forwards;
+}
+
+.trick--to-right .trick__slot {
+  animation: var(--enter) 0.28s ease-out both, collect-to-right 0.4s ease-in 0.85s forwards;
+}
+
+.last-trick .trick__slot {
+  animation: none;
+}
+
+.last-trick-button {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  z-index: 1;
 }
 
 .last-trick {
   position: relative;
-  height: calc(var(--table-w) * 1.45 * 2.3);
+  height: calc(var(--table-w) * 1.45 * 2.7);
 }
 
 /* ---------- Enchères ---------- */
@@ -562,13 +595,32 @@ button {
   min-height: 1.4em;
 }
 
+.hand-area {
+  display: grid;
+}
+
+.hand__hint {
+  margin: 0;
+  min-height: 1.2em;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
 .hand {
   display: flex;
   justify-content: center;
-  padding: 6px 8px calc(10px + env(safe-area-inset-bottom));
+  padding: 30px 8px calc(10px + env(safe-area-inset-bottom));
 }
 
-.hand .card + .card {
+.hand__slot {
+  display: flex;
+  touch-action: none;
+  animation: deal-card 0.35s ease-out backwards;
+  animation-delay: calc(var(--i) * 45ms);
+}
+
+.hand__slot + .hand__slot {
   margin-left: calc(var(--hand-w) * -0.42);
 }
 
@@ -623,12 +675,23 @@ button {
   transform: translateY(-18px);
 }
 
+.card--selected {
+  transform: translateY(-28px) scale(1.06);
+  box-shadow: 0 0 0 3px var(--ink), 0 10px 20px rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}
+
+.card--selected.card--playable:active {
+  transform: translateY(-32px) scale(1.06);
+}
+
 .card--dimmed {
   filter: brightness(0.55);
 }
 
 .card__corner {
   position: absolute;
+  z-index: 1;
   top: 5%;
   left: 9%;
   display: grid;
@@ -652,6 +715,20 @@ button {
 
 .card--table .card__pip {
   font-size: calc(var(--table-w) * 0.5);
+}
+
+/* Portraits des valets, dames et rois */
+.card__figure {
+  position: absolute;
+  right: 6%;
+  bottom: 4%;
+  width: 66%;
+  height: 82%;
+}
+
+.card__figure-suit {
+  font-size: 11px;
+  font-family: system-ui, sans-serif;
 }
 
 /* ---------- Dialogues, notifications ---------- */
@@ -794,10 +871,88 @@ button {
   }
 }
 
-@keyframes deal-in {
+@keyframes deal-card {
   from {
     opacity: 0;
-    scale: 1.15;
+    translate: 0 60%;
+    rotate: 8deg;
+  }
+}
+
+@keyframes pulse {
+  50% {
+    box-shadow: 0 0 0 5px rgba(242, 193, 78, 0.35);
+  }
+}
+
+@keyframes enter-from-bottom {
+  from {
+    opacity: 0;
+    translate: 0 160%;
+  }
+}
+
+@keyframes enter-from-top {
+  from {
+    opacity: 0;
+    translate: 0 -160%;
+  }
+}
+
+@keyframes enter-from-left {
+  from {
+    opacity: 0;
+    translate: -160% 0;
+  }
+}
+
+@keyframes enter-from-right {
+  from {
+    opacity: 0;
+    translate: 160% 0;
+  }
+}
+
+@keyframes collect-to-bottom {
+  to {
+    opacity: 0;
+    translate: 0 220%;
+    scale: 0.6;
+  }
+}
+
+@keyframes collect-to-top {
+  to {
+    opacity: 0;
+    translate: 0 -220%;
+    scale: 0.6;
+  }
+}
+
+@keyframes collect-to-left {
+  to {
+    opacity: 0;
+    translate: -220% 0;
+    scale: 0.6;
+  }
+}
+
+@keyframes collect-to-right {
+  to {
+    opacity: 0;
+    translate: 220% 0;
+    scale: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -814,4 +969,89 @@ button {
   :root {
     --table-w: min(17vw, 84px);
   }
+}
+
+/* ---------- Commandes secondaires ---------- */
+
+.chip-button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip-button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.toggle__text {
+  display: grid;
+  font-weight: 600;
+}
+
+.toggle__hint {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+.toggle__input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle__track {
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  transition: background 0.2s ease;
+}
+
+.toggle__track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--ink);
+  transition: translate 0.2s ease;
+}
+
+.toggle__input:checked + .toggle__track {
+  background: var(--accent);
+}
+
+.toggle__input:checked + .toggle__track::after {
+  translate: 20px 0;
+}
+
+.toggle__input:focus-visible + .toggle__track {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.result__announces {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
 }

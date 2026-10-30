@@ -63,7 +63,25 @@ Mêmes règles de jeu, avec ces différences :
 - Contrat rempli si le preneur fait au moins 82 points (belote comprise) : chacun marque ses points.
   Dedans : chaque adversaire marque 81 points. Capot du preneur : 252. Pas de litige.
 
-Non implémenté (pistes d'évolution) : annonces (tierce, cinquante, cent, carrés), coinche, sans-atout / tout-atout.
+### Annonces (option de table)
+
+- Suites dans l'ordre naturel 7 8 9 10 V D R A : tierce 20, cinquante 50, cent 100 (5 cartes ou plus).
+- Carrés : valets 200, 9 150, as / 10 / rois / dames 100 (pas de carré de 7 ni de 8).
+- Elles sont déclarées automatiquement au premier pli, quand le joueur pose sa carte.
+- Seul le camp qui détient la meilleure annonce marque toutes les siennes. Départage : valeur, puis hauteur
+  (un carré bat une suite de même valeur), puis suite à l'atout. Égalité parfaite : aucune annonce ne compte.
+- Elles comptent pour remplir le contrat. À 4, si le preneur chute, la défense marque 162 plus toutes les annonces ;
+  à 3, chaque adversaire garde ses annonces et le preneur perd les siennes.
+
+### Interface
+
+- Figures dessinées pour les valets, dames et rois (illustrations originales en SVG).
+- Toucher une carte la sélectionne, la toucher à nouveau la joue ; glisser vers le haut la joue directement.
+- Animations : distribution, cartes qui arrivent de la place du joueur, pli ramassé vers son gagnant.
+  Elles sont désactivées si le téléphone demande de réduire les animations.
+- Bouton « Dernier pli » pour revoir le pli précédent, vibration quand c'est à vous de jouer.
+
+Non implémenté (pistes d'évolution) : coinche, sans-atout / tout-atout.
 
 ## Architecture
 

@@ -7,11 +7,10 @@ interface ScoreBarProps {
   room: RoomView;
   game: GameView;
   takerName: string | null;
-  onShowLastTrick(): void;
   onLeave(): void;
 }
 
-export function ScoreBar({ room, game, takerName, onShowLastTrick, onLeave }: ScoreBarProps) {
+export function ScoreBar({ room, game, takerName, onLeave }: ScoreBarProps) {
   const trump = game.contract?.trump;
   return (
     <header className="scorebar">
@@ -31,9 +30,6 @@ export function ScoreBar({ room, game, takerName, onShowLastTrick, onLeave }: Sc
             Atout {suitSymbol(trump)}
           </span>
         )}
-        <button type="button" className="icon-button" onClick={onShowLastTrick} disabled={!game.lastTrick} aria-label="Voir le dernier pli">
-          ↺
-        </button>
         <button type="button" className="icon-button" onClick={onLeave} aria-label="Quitter la partie">
           ✕
         </button>
