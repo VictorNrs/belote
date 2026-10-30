@@ -1,0 +1,10 @@
+{
+  "name": "Belote",
+  "short_name": "Belote",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d3b24",
+  "theme_color": "#0d3b24",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
