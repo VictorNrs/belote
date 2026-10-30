@@ -24,6 +24,7 @@ export interface GameSnapshot {
   passedSeats: number[];
   contract: ContractSnapshot | null;
   trick: PlayedCardSnapshot[];
+  trickWinner: number | null;
   lastTrick: TrickSnapshot | null;
   tricksWon: number[];
   scores: number[];
@@ -48,6 +49,7 @@ export const NO_DEAL_DETAILS: DealSnapshotDefaults = {
   passedSeats: [],
   contract: null,
   trick: [],
+  trickWinner: null,
   lastTrick: null,
   lastResult: null,
   winner: null,

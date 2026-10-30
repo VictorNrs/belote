@@ -26,6 +26,10 @@ export class Hands {
     return this.replace(seat, this.of(seat).without(card));
   }
 
+  seats(): readonly Seat[] {
+    return this.format.seats();
+  }
+
   holderOf(predicate: (hand: Cards) => boolean): Seat | null {
     return this.format.seats().find((seat) => predicate(this.of(seat))) ?? null;
   }

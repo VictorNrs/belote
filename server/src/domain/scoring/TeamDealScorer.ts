@@ -1,7 +1,7 @@
 import { Points } from '../card/Points';
 import { Contract } from '../bidding/Contract';
-import { Belote } from '../play/Belote';
 import { CollectedTricks } from '../play/CollectedTricks';
+import { DealBonuses } from '../play/DealBonuses';
 import { Team } from '../table/Team';
 import { TeamPoints } from '../table/TeamPoints';
 import { DealScorer } from './DealScorer';
@@ -18,8 +18,8 @@ interface Verdict {
 
 /**
  * Comptage de la belote à 4 (deux équipes) :
- * - contrat rempli : chaque équipe marque ses points ;
- * - dedans : la défense marque 162 ;
+ * - contrat rempli : chaque équipe marque ses points (cartes, belote, annonces) ;
+ * - dedans : la défense marque 162 et toutes les annonces ;
  * - capot : 252 pour l'équipe qui a fait tous les plis ;
  * - litige (égalité) : les points du preneur sont mis en réserve pour la donne suivante.
  * La belote reste toujours acquise à l'équipe qui l'a annoncée.
@@ -27,27 +27,32 @@ interface Verdict {
 export class TeamDealScorer implements DealScorer {
   constructor(private readonly teams: readonly Team[]) {}
 
-  score(contract: Contract, tricks: CollectedTricks, belote: Belote, pendingLitige: Points): DealResult {
-    const verdict = this.verdict(contract, tricks, belote);
+  score(contract: Contract, tricks: CollectedTricks, bonuses: DealBonuses, pendingLitige: Points): DealResult {
+    const verdict = this.verdict(contract, tricks, bonuses);
     const settled = this.settleLitige(verdict, pendingLitige);
-    return new DealResult({ contract, outcome: verdict.outcome, cardPoints: tricks.cardPoints(), belote, ...settled });
+    const announcePoints = bonuses.announcePoints(this.teams);
+    return new DealResult({ contract, outcome: verdict.outcome, cardPoints: tricks.cardPoints(), bonuses, announcePoints, ...settled });
   }
 
-  private verdict(contract: Contract, tricks: CollectedTricks, belote: Belote): Verdict {
-    const bonuses = belote.bonuses(this.teams);
+  private verdict(contract: Contract, tricks: CollectedTricks, bonuses: DealBonuses): Verdict {
+    const extras = bonuses.totals(this.teams);
     const sweepingTeam = tricks.sweepingTeam();
-    if (sweepingTeam) return this.capot(contract, sweepingTeam, bonuses);
-    const totals = tricks.cardPoints().plus(bonuses);
+    if (sweepingTeam) return this.capot(contract, sweepingTeam, extras);
+    const totals = tricks.cardPoints().plus(extras);
     const leader = totals.leader();
     if (!leader) return this.litige(contract, totals);
     if (leader.equals(contract.takingTeam())) return { outcome: 'made', scored: totals, heldInLitige: Points.ZERO };
-    const scored = this.pointsFor(this.defending(contract), DEAL_TOTAL).plus(bonuses);
-    return { outcome: 'failed', scored, heldInLitige: Points.ZERO };
+    return { outcome: 'failed', scored: this.failed(contract, bonuses), heldInLitige: Points.ZERO };
   }
 
-  private capot(contract: Contract, sweepingTeam: Team, bonuses: TeamPoints): Verdict {
+  private failed(contract: Contract, bonuses: DealBonuses): TeamPoints {
+    const defenseShare = DEAL_TOTAL.plus(bonuses.announceTotal());
+    return this.pointsFor(this.defending(contract), defenseShare).plus(bonuses.beloteBonuses(this.teams));
+  }
+
+  private capot(contract: Contract, sweepingTeam: Team, extras: TeamPoints): Verdict {
     const outcome = sweepingTeam.equals(contract.takingTeam()) ? 'capot' : 'capotAgainst';
-    return { outcome, scored: this.pointsFor(sweepingTeam, CAPOT_TOTAL).plus(bonuses), heldInLitige: Points.ZERO };
+    return { outcome, scored: this.pointsFor(sweepingTeam, CAPOT_TOTAL).plus(extras), heldInLitige: Points.ZERO };
   }
 
   private litige(contract: Contract, totals: TeamPoints): Verdict {

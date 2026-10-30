@@ -1,10 +1,12 @@
 import { GAME_TARGETS } from '@belote/shared';
+import { AnnounceRules } from '../../domain/announce/AnnounceRule';
 import { Points } from '../../domain/card/Points';
 import { TableFormats } from '../../domain/format/TableFormats';
 import { HumanPlayer } from '../../domain/room/Participant';
 import { PlayerId } from '../../domain/room/PlayerId';
 import { PlayerName } from '../../domain/room/PlayerName';
-import { Room, RoomRules } from '../../domain/room/Room';
+import { Room } from '../../domain/room/Room';
+import { RoomRules } from '../../domain/room/RoomRules';
 import { RoomCode } from '../../domain/room/RoomCode';
 import { ApplicationError } from '../ApplicationError';
 import { RoomCodeGenerator } from '../ports/RoomCodeGenerator';
@@ -18,6 +20,7 @@ export interface CreateRoomCommand extends PlayerCommand {
   name: string;
   target: number;
   players: number;
+  announces: boolean;
   withBots: boolean;
 }
 
@@ -57,6 +60,10 @@ export class CreateRoom {
 
   private rulesFrom(command: CreateRoomCommand): RoomRules {
     if (!(GAME_TARGETS as readonly number[]).includes(command.target)) throw new ApplicationError('Objectif de points invalide');
-    return { target: new Points(command.target), format: TableFormats.forPlayerCount(command.players) };
+    return {
+      target: new Points(command.target),
+      format: TableFormats.forPlayerCount(command.players),
+      announces: AnnounceRules.of(command.announces),
+    };
   }
 }

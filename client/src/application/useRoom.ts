@@ -5,6 +5,7 @@ import { useServices } from './GameContext';
 export interface NewTable {
   target: number;
   players: PlayerCount;
+  announces: boolean;
   withBots: boolean;
 }
 

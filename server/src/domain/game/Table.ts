@@ -1,5 +1,8 @@
 import { Points } from '../card/Points';
+import { Contract } from '../bidding/Contract';
+import { Hands } from '../play/Hands';
 import { OpeningDeal } from '../play/OpeningDeal';
+import { PlayingDeal } from '../play/PlayingDeal';
 import { DealResult } from '../scoring/DealResult';
 import { Scoreboard } from '../scoring/Scoreboard';
 import { Seat } from '../table/Seat';
@@ -27,6 +30,10 @@ export class Table {
 
   dealOpening(): OpeningDeal {
     return this.settings.dealOpening(this.dealer);
+  }
+
+  startPlaying(hands: Hands, contract: Contract): PlayingDeal {
+    return this.settings.startPlaying(hands, contract, this.dealer);
   }
 
   passDealToNextPlayer(): Table {

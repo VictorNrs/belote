@@ -37,6 +37,10 @@ export class CollectedTricks {
     return new CollectedTricks(this.teams, [...this.tricks, new CollectedTrick(winner, points.plus(bonus))]);
   }
 
+  isEmpty(): boolean {
+    return this.tricks.length === 0;
+  }
+
   isComplete(): boolean {
     return this.tricks.length === TRICKS_PER_DEAL;
   }

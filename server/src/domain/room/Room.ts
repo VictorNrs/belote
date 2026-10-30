@@ -1,35 +1,28 @@
 import { Card } from '../card/Card';
-import { Points } from '../card/Points';
 import { Bid } from '../bidding/Bid';
 import { BotStrategy } from '../bot/BotStrategy';
 import { Game } from '../game/Game';
 import { GamePhase, GameSnapshot } from '../game/GameSnapshot';
 import { DomainError } from '../shared/DomainError';
 import { Seat } from '../table/Seat';
-import { TableFormat } from '../table/TableFormat';
 import { BotPlayer, HumanPlayer } from './Participant';
 import { PlayerId } from './PlayerId';
 import { PlayerName } from './PlayerName';
 import { RoomCode } from './RoomCode';
+import { GameFactory, RoomRules } from './RoomRules';
 import { SeatAssignments, SeatSnapshot } from './SeatAssignments';
 
 export type AutomaticStep = 'botTurn' | 'collectTrick' | 'nextDeal';
-export type GameFactory = (target: Points, format: TableFormat) => Game;
 
 export interface RoomSnapshot {
   code: string;
   playerCount: number;
+  announces: boolean;
   mySeat: number;
   isHost: boolean;
   target: number;
   seats: (SeatSnapshot | null)[];
   game: GameSnapshot | null;
-}
-
-/** Réglages choisis à la création de la salle. */
-export interface RoomRules {
-  target: Points;
-  format: TableFormat;
 }
 
 const ADVANCING_PHASES: Partial<Record<GamePhase, AutomaticStep>> = { trickComplete: 'collectTrick', dealEnd: 'nextDeal' };
@@ -88,7 +81,7 @@ export class Room {
     this.ensureHost(requester);
     this.ensureNoGameInProgress();
     if (!this.seats.isFull()) throw new DomainError('Il faut 4 joueurs pour commencer');
-    this.game = newGame(this.rules.target, this.rules.format);
+    this.game = newGame(this.rules);
   }
 
   /** En cours de partie, un robot reprend la place du joueur qui s'en va. */
@@ -142,6 +135,7 @@ export class Room {
     return {
       code: this.code.toString(),
       playerCount: this.rules.format.playerCount(),
+      announces: this.rules.announces.isEnabled(),
       mySeat: seat.toIndex(),
       isHost: this.host.equals(id),
       target: this.rules.target.toNumber(),

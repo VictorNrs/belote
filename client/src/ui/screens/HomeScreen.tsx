@@ -3,6 +3,7 @@ import { FormEvent, useState } from 'react';
 import { useServices } from '../../application/GameContext';
 import { RoomActions } from '../../application/useRoom';
 import { Segmented } from '../components/Segmented';
+import { Toggle } from '../components/Toggle';
 
 interface HomeScreenProps {
   actions: RoomActions;
@@ -45,6 +46,8 @@ export function HomeScreen({ actions, connected }: HomeScreenProps) {
   const [name, setName] = useState(profile.name());
   const [target, setTarget] = useState<number>(1000);
   const [players, setPlayers] = useState<PlayerCount>(4);
+  const [announces, setAnnounces] = useState(true);
+  const table = { target, players, announces };
   const canAct = connected && name.trim().length > 0;
 
   const updateName = (value: string) => {
@@ -66,15 +69,16 @@ export function HomeScreen({ actions, connected }: HomeScreenProps) {
         <span className="field__label">Nouvelle partie</span>
         <Segmented<PlayerCount> label="Nombre de joueurs" options={PLAYER_OPTIONS} value={players} onChange={setPlayers} />
         <Segmented label="Partie en" options={TARGET_OPTIONS} value={target} onChange={setTarget} />
+        <Toggle label="Annonces" hint="Tierce, cinquante, cent, carrés" checked={announces} onChange={setAnnounces} />
         <button
           type="button"
           className="button button--primary button--block"
           disabled={!canAct}
-          onClick={() => actions.createRoom({ target, players, withBots: true })}
+          onClick={() => actions.createRoom({ ...table, withBots: true })}
         >
           Jouer contre des robots
         </button>
-        <button type="button" className="button button--block" disabled={!canAct} onClick={() => actions.createRoom({ target, players, withBots: false })}>
+        <button type="button" className="button button--block" disabled={!canAct} onClick={() => actions.createRoom({ ...table, withBots: false })}>
           Créer une table entre amis
         </button>
       </section>

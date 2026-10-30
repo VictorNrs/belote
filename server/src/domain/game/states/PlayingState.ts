@@ -18,7 +18,7 @@ export class PlayingState extends BaseState {
   }
 
   static start(table: Table, hands: Hands, contract: Contract): PlayingState {
-    return new PlayingState(table, PlayingDeal.start(hands, contract, table.dealerSeat()));
+    return new PlayingState(table, table.startPlaying(hands, contract));
   }
 
   phase(): GamePhase {

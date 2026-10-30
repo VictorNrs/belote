@@ -17,6 +17,11 @@ export class TeamPoints {
     return this.mapTeams((current) => (current.equals(team) ? this.of(current).plus(points) : this.of(current)));
   }
 
+  /** Les mêmes points, sans ceux de ce camp. */
+  without(team: Team): TeamPoints {
+    return this.mapTeams((current) => (current.equals(team) ? Points.ZERO : this.of(current)));
+  }
+
   plus(other: TeamPoints): TeamPoints {
     return this.mapTeams((team) => this.of(team).plus(other.of(team)));
   }

@@ -26,11 +26,19 @@ export interface TrickView {
   winner: number;
 }
 
+export interface AnnounceView {
+  seat: number;
+  label: string;
+  points: number;
+}
+
 export interface DealResultView {
   contract: ContractView;
   outcome: DealOutcome;
   cardPoints: number[];
   beloteTeam: number | null;
+  announcePoints: number[];
+  announces: AnnounceView[];
   scored: number[];
   pendingLitige: number;
 }
@@ -53,6 +61,8 @@ export interface GameView {
   passedSeats: number[];
   contract: ContractView | null;
   trick: PlayedCardView[];
+  /** Gagnant du pli quand les quatre (ou trois) cartes sont posées, pour l'animation du ramassage. */
+  trickWinner: number | null;
   lastTrick: TrickView | null;
   tricksWon: number[];
   scores: number[];
@@ -73,6 +83,7 @@ export interface SeatView {
 export interface RoomView {
   code: string;
   playerCount: number;
+  announces: boolean;
   mySeat: number;
   isHost: boolean;
   target: number;
@@ -87,6 +98,7 @@ export interface CreateRoomPayload {
   name: string;
   target: number;
   players: PlayerCount;
+  announces: boolean;
   withBots: boolean;
 }
 

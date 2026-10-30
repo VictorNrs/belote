@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { AnnounceRule, AnnounceRules } from '../src/domain/announce/AnnounceRule';
 import { Card } from '../src/domain/card/Card';
 import { Points } from '../src/domain/card/Points';
 import { Rank } from '../src/domain/card/Rank';
@@ -10,8 +11,8 @@ import { CardDealer } from '../src/domain/play/CardDealer';
 import { TableFormat } from '../src/domain/table/TableFormat';
 import { FOUR, seat, seededShuffler, THREE } from './helpers';
 
-const newGame = (seed: number, target = 1000, format: TableFormat = FOUR) =>
-  Game.start(new GameSettings(new Points(target), new CardDealer(seededShuffler(seed))), format.seat(0));
+const newGame = (seed: number, target = 1000, format: TableFormat = FOUR, announces: AnnounceRule = AnnounceRules.DISABLED) =>
+  Game.start(new GameSettings(new Points(target), new CardDealer(seededShuffler(seed)), announces), format.seat(0));
 
 const bot = new SimpleBot();
 
@@ -101,3 +102,41 @@ describe('Partie à 3', () => {
     expect(Math.max(...snapshot.scores)).toBeGreaterThanOrEqual(500);
   });
 });
+
+describe('Partie avec annonces', () => {
+  it.each([
+    [4, 1],
+    [4, 2],
+    [3, 3],
+    [3, 4],
+  ])('à %i joueurs, les robots terminent une partie (graine %i)', (players, seed) => {
+    const format = players === 4 ? FOUR : THREE;
+    const game = newGame(seed, 500, format, AnnounceRules.ENABLED);
+    playToTheEnd(game);
+    expect(game.snapshotFor(seat(0, format)).phase).toBe('gameOver');
+  });
+
+  it('une annonce est déclarée par son auteur lors du premier pli', () => {
+    const declared = Array.from({ length: 30 }, (_, seed) => newGame(seed, 1000, FOUR, AnnounceRules.ENABLED))
+      .map((game) => playFirstTrick(game))
+      .filter((texts) => texts.length > 0);
+    expect(declared.length).toBeGreaterThan(0);
+    declared.flat().forEach((text) => expect(text).toMatch(/Tierce|Cinquante|Cent|Carré|Belote/));
+  });
+});
+
+/** Joue jusqu'à la fin du premier pli et renvoie les annonces affichées entre-temps. */
+function playFirstTrick(game: Game): string[] {
+  const texts: string[] = [];
+  let lastId = 0;
+  for (let step = 0; step < 200 && game.phase() !== 'trickComplete' && !game.isOver(); step++) {
+    const isPlaying = game.phase() === 'playing';
+    const actor = game.playerToAct();
+    if (actor) game.actAsBot(actor, bot);
+    if (!actor) game.advance();
+    const announcement = game.snapshotFor(seat(0)).announcement;
+    if (isPlaying && announcement && announcement.id !== lastId) texts.push(announcement.text);
+    lastId = announcement?.id ?? 0;
+  }
+  return texts;
+}

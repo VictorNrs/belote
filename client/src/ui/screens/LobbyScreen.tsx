@@ -87,7 +87,7 @@ export function LobbyScreen({ room, actions }: LobbyProps) {
     <main className="lobby">
       <ShareCode code={room.code} />
       <p className="lobby__info">
-        Partie en {room.target} points. {tableDescription(room)}
+        Partie en {room.target} points, {room.announces ? 'avec' : 'sans'} annonces. {tableDescription(room)}
       </p>
       <ul className="seats">
         {room.seats.map((occupant, seat) => (

@@ -36,6 +36,10 @@ export class TrickHistory {
     return new TrickHistory(this.currentTrick.next(), previous, collected);
   }
 
+  isFirstTrick(): boolean {
+    return this.collected.isEmpty();
+  }
+
   isTrickComplete(): boolean {
     return this.currentTrick.isComplete();
   }

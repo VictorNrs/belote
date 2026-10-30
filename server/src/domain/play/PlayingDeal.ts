@@ -1,3 +1,4 @@
+import { AnnounceRule } from '../announce/AnnounceRule';
 import { Card } from '../card/Card';
 import { Cards } from '../card/Cards';
 import { Points } from '../card/Points';
@@ -6,7 +7,7 @@ import { PlayView } from '../bot/BotStrategy';
 import { DealResult } from '../scoring/DealResult';
 import { DomainError } from '../shared/DomainError';
 import { Seat } from '../table/Seat';
-import { Belote } from './Belote';
+import { DealBonuses } from './DealBonuses';
 import { Hands } from './Hands';
 import { PlayedCard, PlayedCardSnapshot } from './PlayedCard';
 import { PlayRules } from './PlayRules';
@@ -19,6 +20,7 @@ export interface PlayingSnapshot {
   handSizes: number[];
   contract: ContractSnapshot;
   trick: PlayedCardSnapshot[];
+  trickWinner: number | null;
   lastTrick: TrickSnapshot | null;
   tricksWon: number[];
 }
@@ -30,12 +32,12 @@ export class PlayingDeal {
     private readonly contract: Contract,
     private readonly turn: Seat,
     private readonly tricks: TrickHistory,
-    private readonly belote: Belote,
+    private readonly bonuses: DealBonuses,
   ) {}
 
-  static start(hands: Hands, contract: Contract, dealer: Seat): PlayingDeal {
+  static start(hands: Hands, contract: Contract, dealer: Seat, announceRule: AnnounceRule): PlayingDeal {
     const tricks = TrickHistory.start(dealer.format());
-    return new PlayingDeal(hands, contract, dealer.next(), tricks, Belote.detect(hands, contract.trump()));
+    return new PlayingDeal(hands, contract, dealer.next(), tricks, DealBonuses.detect(hands, contract.trump(), announceRule));
   }
 
   currentPlayer(): Seat {
@@ -50,14 +52,14 @@ export class PlayingDeal {
   play(seat: Seat, card: Card): PlayingDeal {
     if (!seat.equals(this.turn)) throw new DomainError("Ce n'est pas votre tour de jouer");
     if (!this.legalCardsFor(seat).contains(card)) throw new DomainError('Cette carte ne peut pas être jouée');
-    const trump = this.contract.trump();
     const tricks = this.tricks.play(new PlayedCard(seat, card));
-    return new PlayingDeal(this.hands.remove(seat, card), this.contract, seat.next(), tricks, this.belote.afterPlay(seat, card, trump));
+    const bonuses = this.bonuses.afterPlay(seat, card, this.contract.trump());
+    return new PlayingDeal(this.hands.remove(seat, card), this.contract, seat.next(), tricks, bonuses);
   }
 
-  /** L'annonce « Belote » / « Rebelote » déclenchée depuis l'état précédent, s'il y en a une. */
+  /** Ce qu'a annoncé le joueur qui vient de poser sa carte (annonces, belote), s'il y a lieu. */
   announcementSince(previous: PlayingDeal): string | null {
-    return this.belote === previous.belote ? null : this.belote.announcement();
+    return this.bonuses.announcementSince(previous.bonuses, previous.turn, previous.tricks.isFirstTrick());
   }
 
   isTrickComplete(): boolean {
@@ -67,7 +69,7 @@ export class PlayingDeal {
   collectTrick(): PlayingDeal {
     const trump = this.contract.trump();
     const winner = this.tricks.current().winner(trump);
-    return new PlayingDeal(this.hands, this.contract, winner, this.tricks.collect(trump), this.belote);
+    return new PlayingDeal(this.hands, this.contract, winner, this.tricks.collect(trump), this.bonuses);
   }
 
   isOver(): boolean {
@@ -75,7 +77,7 @@ export class PlayingDeal {
   }
 
   score(pendingLitige: Points): DealResult {
-    return this.turn.format().scorer().score(this.contract, this.tricks.collectedTricks(), this.belote, pendingLitige);
+    return this.turn.format().scorer().score(this.contract, this.tricks.collectedTricks(), this.bonuses, pendingLitige);
   }
 
   viewFor(seat: Seat): PlayView {
@@ -85,13 +87,15 @@ export class PlayingDeal {
   }
 
   toSnapshot(viewer: Seat): PlayingSnapshot {
+    const trump = this.contract.trump();
     return {
       turn: this.isTrickComplete() ? null : this.turn.toIndex(),
-      hand: this.hands.of(viewer).orderedFor(this.contract.trump()).toCodes(),
+      hand: this.hands.of(viewer).orderedFor(trump).toCodes(),
       legalCards: this.legalCardsFor(viewer).toCodes(),
       handSizes: this.hands.sizes(),
       contract: this.contract.toSnapshot(),
       trick: this.tricks.current().toSnapshot(),
+      trickWinner: this.isTrickComplete() ? this.tricks.current().winner(trump).toIndex() : null,
       lastTrick: this.tricks.previousTrick(),
       tricksWon: this.tricks.collectedTricks().counts(),
     };
