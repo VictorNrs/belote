@@ -1,13 +1,17 @@
 import { Card } from '../card/Card';
 import { Cards } from '../card/Cards';
 import { Seat } from '../table/Seat';
+import { TableFormat } from '../table/TableFormat';
 
-/** Les mains des quatre joueurs. */
+/** Les mains de tous les joueurs de la table. */
 export class Hands {
-  private constructor(private readonly bySeat: readonly Cards[]) {}
+  private constructor(
+    private readonly format: TableFormat,
+    private readonly bySeat: readonly Cards[],
+  ) {}
 
-  static empty(): Hands {
-    return new Hands(Seat.all().map(() => Cards.NONE));
+  static empty(format: TableFormat): Hands {
+    return new Hands(format, format.seats().map(() => Cards.NONE));
   }
 
   of(seat: Seat): Cards {
@@ -23,7 +27,7 @@ export class Hands {
   }
 
   holderOf(predicate: (hand: Cards) => boolean): Seat | null {
-    return Seat.all().find((seat) => predicate(this.of(seat))) ?? null;
+    return this.format.seats().find((seat) => predicate(this.of(seat))) ?? null;
   }
 
   allCards(): Cards {
@@ -35,6 +39,6 @@ export class Hands {
   }
 
   private replace(seat: Seat, hand: Cards): Hands {
-    return new Hands(Seat.all().map((current) => (current.equals(seat) ? hand : this.of(current))));
+    return new Hands(this.format, this.format.seats().map((current) => (current.equals(seat) ? hand : this.of(current))));
   }
 }

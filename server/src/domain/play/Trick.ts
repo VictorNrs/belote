@@ -10,12 +10,22 @@ export const NO_TRUMP_STRENGTH = -1;
 
 /** Pli en cours : les cartes posées sur la table, dans l'ordre. */
 export class Trick {
-  static readonly EMPTY = new Trick([]);
+  private constructor(
+    private readonly playerCount: number,
+    private readonly plays: readonly PlayedCard[],
+  ) {}
 
-  private constructor(private readonly plays: readonly PlayedCard[]) {}
+  static empty(playerCount: number): Trick {
+    return new Trick(playerCount, []);
+  }
 
   add(play: PlayedCard): Trick {
-    return new Trick([...this.plays, play]);
+    return new Trick(this.playerCount, [...this.plays, play]);
+  }
+
+  /** Un nouveau pli vide, pour le même nombre de joueurs. */
+  next(): Trick {
+    return Trick.empty(this.playerCount);
   }
 
   isEmpty(): boolean {
@@ -23,11 +33,11 @@ export class Trick {
   }
 
   isComplete(): boolean {
-    return this.plays.length === Seat.count();
+    return this.plays.length === this.playerCount;
   }
 
   remainingPlays(): number {
-    return Seat.count() - this.plays.length;
+    return this.playerCount - this.plays.length;
   }
 
   leadCard(): Card {

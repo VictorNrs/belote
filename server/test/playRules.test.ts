@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { Trick } from '../src/domain/play/Trick';
 import { PlayRules } from '../src/domain/play/PlayRules';
-import { Seat } from '../src/domain/table/Seat';
-import { cards, trick, trumpOf } from './helpers';
+import { Trick } from '../src/domain/play/Trick';
+import { TableFormat } from '../src/domain/table/TableFormat';
+import { cards, FOUR, seat, THREE, trick, trickAt, trumpOf } from './helpers';
 
 const spades = trumpOf('S');
-const legal = (currentTrick: Trick, seat: number, ...hand: string[]) =>
-  new PlayRules(currentTrick, spades).legalCards(cards(...hand), Seat.of(seat)).toCodes().sort();
+const legalAt = (format: TableFormat, currentTrick: Trick, seatIndex: number, ...hand: string[]) =>
+  new PlayRules(currentTrick, spades).legalCards(cards(...hand), seat(seatIndex, format)).toCodes().sort();
+const legal = (currentTrick: Trick, seatIndex: number, ...hand: string[]) => legalAt(FOUR, currentTrick, seatIndex, ...hand);
 
 describe('Règles de jeu', () => {
-  it("toutes les cartes sont jouables quand on entame", () => {
-    expect(legal(Trick.EMPTY, 0, 'AH', '7S', 'KD')).toEqual(['7S', 'AH', 'KD']);
+  it('toutes les cartes sont jouables quand on entame', () => {
+    expect(legal(Trick.empty(4), 0, 'AH', '7S', 'KD')).toEqual(['7S', 'AH', 'KD']);
   });
 
   it('il faut fournir la couleur demandée', () => {
@@ -25,7 +26,7 @@ describe('Règles de jeu', () => {
     expect(legal(trick(0, 'AH', '7H'), 2, '7S', 'KD')).toEqual(['7S', 'KD']);
   });
 
-  it("il faut surcouper quand un adversaire a déjà coupé", () => {
+  it('il faut surcouper quand un adversaire a déjà coupé', () => {
     expect(legal(trick(0, 'KH', '9S'), 2, '7S', 'JS', 'KD')).toEqual(['JS']);
   });
 
@@ -39,5 +40,9 @@ describe('Règles de jeu', () => {
 
   it("à l'atout, sans pouvoir monter, on fournit quand même de l'atout", () => {
     expect(legal(trick(0, 'JS'), 1, '7S', 'AS', 'KD')).toEqual(['7S', 'AS']);
+  });
+
+  it("à 3, il n'y a pas de partenaire : il faut toujours couper", () => {
+    expect(legalAt(THREE, trickAt(THREE, 0, 'AH', '9H'), 2, '9S', 'KD')).toEqual(['9S']);
   });
 });

@@ -4,7 +4,6 @@ import { Points } from '../card/Points';
 import { Contract, ContractSnapshot } from '../bidding/Contract';
 import { PlayView } from '../bot/BotStrategy';
 import { DealResult } from '../scoring/DealResult';
-import { DealScorer } from '../scoring/DealScorer';
 import { DomainError } from '../shared/DomainError';
 import { Seat } from '../table/Seat';
 import { Belote } from './Belote';
@@ -24,8 +23,6 @@ export interface PlayingSnapshot {
   tricksWon: number[];
 }
 
-const scorer = new DealScorer();
-
 /** Phase de jeu de la carte d'une donne, une fois l'atout choisi. */
 export class PlayingDeal {
   private constructor(
@@ -37,7 +34,8 @@ export class PlayingDeal {
   ) {}
 
   static start(hands: Hands, contract: Contract, dealer: Seat): PlayingDeal {
-    return new PlayingDeal(hands, contract, dealer.next(), TrickHistory.start(), Belote.detect(hands, contract.trump()));
+    const tricks = TrickHistory.start(dealer.format());
+    return new PlayingDeal(hands, contract, dealer.next(), tricks, Belote.detect(hands, contract.trump()));
   }
 
   currentPlayer(): Seat {
@@ -77,7 +75,7 @@ export class PlayingDeal {
   }
 
   score(pendingLitige: Points): DealResult {
-    return scorer.score(this.contract, this.tricks.collectedTricks(), this.belote, pendingLitige);
+    return this.turn.format().scorer().score(this.contract, this.tricks.collectedTricks(), this.belote, pendingLitige);
   }
 
   viewFor(seat: Seat): PlayView {

@@ -6,6 +6,7 @@ import { Game } from '../game/Game';
 import { GamePhase, GameSnapshot } from '../game/GameSnapshot';
 import { DomainError } from '../shared/DomainError';
 import { Seat } from '../table/Seat';
+import { TableFormat } from '../table/TableFormat';
 import { BotPlayer, HumanPlayer } from './Participant';
 import { PlayerId } from './PlayerId';
 import { PlayerName } from './PlayerName';
@@ -13,15 +14,22 @@ import { RoomCode } from './RoomCode';
 import { SeatAssignments, SeatSnapshot } from './SeatAssignments';
 
 export type AutomaticStep = 'botTurn' | 'collectTrick' | 'nextDeal';
-export type GameFactory = (target: Points) => Game;
+export type GameFactory = (target: Points, format: TableFormat) => Game;
 
 export interface RoomSnapshot {
   code: string;
+  playerCount: number;
   mySeat: number;
   isHost: boolean;
   target: number;
   seats: (SeatSnapshot | null)[];
   game: GameSnapshot | null;
+}
+
+/** Réglages choisis à la création de la salle. */
+export interface RoomRules {
+  target: Points;
+  format: TableFormat;
 }
 
 const ADVANCING_PHASES: Partial<Record<GamePhase, AutomaticStep>> = { trickComplete: 'collectTrick', dealEnd: 'nextDeal' };
@@ -30,15 +38,19 @@ const ADVANCING_PHASES: Partial<Record<GamePhase, AutomaticStep>> = { trickCompl
 export class Room {
   private constructor(
     private readonly code: RoomCode,
-    private readonly target: Points,
+    private readonly rules: RoomRules,
     private seats: SeatAssignments,
     private host: PlayerId,
     private game: Game | null,
   ) {}
 
-  static open(code: RoomCode, hostId: PlayerId, hostName: PlayerName, target: Points): Room {
-    const seats = SeatAssignments.empty().assign(Seat.of(0), HumanPlayer.join(hostId, hostName));
-    return new Room(code, target, seats, hostId, null);
+  static open(code: RoomCode, host: HumanPlayer, rules: RoomRules): Room {
+    const seats = SeatAssignments.empty(rules.format).assign(rules.format.seat(0), host);
+    return new Room(code, rules, seats, host.playerId(), null);
+  }
+
+  seatAt(index: number): Seat {
+    return this.rules.format.seat(index);
   }
 
   join(id: PlayerId, name: PlayerName): void {
@@ -76,7 +88,7 @@ export class Room {
     this.ensureHost(requester);
     this.ensureNoGameInProgress();
     if (!this.seats.isFull()) throw new DomainError('Il faut 4 joueurs pour commencer');
-    this.game = newGame(this.target);
+    this.game = newGame(this.rules.target, this.rules.format);
   }
 
   /** En cours de partie, un robot reprend la place du joueur qui s'en va. */
@@ -129,9 +141,10 @@ export class Room {
     const seat = this.requireSeat(id);
     return {
       code: this.code.toString(),
+      playerCount: this.rules.format.playerCount(),
       mySeat: seat.toIndex(),
       isHost: this.host.equals(id),
-      target: this.target.toNumber(),
+      target: this.rules.target.toNumber(),
       seats: this.seats.toSnapshot(this.host),
       game: this.game?.snapshotFor(seat) ?? null,
     };

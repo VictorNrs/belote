@@ -2,6 +2,7 @@ import { Card } from '../card/Card';
 import { Points } from '../card/Points';
 import { Trump } from '../card/Trump';
 import { Seat } from '../table/Seat';
+import { Team } from '../table/Team';
 import { TeamPoints } from '../table/TeamPoints';
 import { Hands } from './Hands';
 
@@ -28,9 +29,10 @@ export class Belote {
     return this.cardsShown === 1 ? 'Belote !' : 'Rebelote !';
   }
 
-  bonuses(): TeamPoints {
-    if (!this.holder) return TeamPoints.ZERO;
-    return TeamPoints.forTeam(this.holder.team(), BELOTE_BONUS);
+  bonuses(teams: readonly Team[]): TeamPoints {
+    const none = TeamPoints.zero(teams);
+    if (!this.holder) return none;
+    return none.add(this.holder.team(), BELOTE_BONUS);
   }
 
   holderTeamIndex(): number | null {

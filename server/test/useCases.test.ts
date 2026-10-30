@@ -62,7 +62,7 @@ describe('Cas d’usage', () => {
   });
 
   it("crée une salle, accueille un second joueur et réserve le lancement à l'hôte", () => {
-    const code = useCases.createRoom.execute({ playerId: ALICE, name: 'Alice', target: 1000, withBots: false });
+    const code = useCases.createRoom.execute({ playerId: ALICE, name: 'Alice', target: 1000, players: 4, withBots: false });
     useCases.joinRoom.execute({ playerId: BOB, name: 'Bob', code });
     expect(viewOf(BOB).mySeat).toBe(1);
     expect(viewOf(ALICE).seats.map((seat) => seat?.name ?? null)).toEqual(['Alice', 'Bob', null, null]);
@@ -71,7 +71,7 @@ describe('Cas d’usage', () => {
   });
 
   it("change de place et complète la table avec des robots", () => {
-    const code = useCases.createRoom.execute({ playerId: ALICE, name: 'Alice', target: 1000, withBots: false });
+    const code = useCases.createRoom.execute({ playerId: ALICE, name: 'Alice', target: 1000, players: 4, withBots: false });
     useCases.joinRoom.execute({ playerId: BOB, name: 'Bob', code });
     useCases.takeSeat.execute({ playerId: BOB, seat: 2 });
     useCases.addBot.execute({ playerId: ALICE, seat: 1 });
@@ -82,7 +82,7 @@ describe('Cas d’usage', () => {
   });
 
   it("un robot reprend la place d'un joueur qui quitte la partie, et l'hôte est transmis", () => {
-    const code = useCases.createRoom.execute({ playerId: ALICE, name: 'Alice', target: 1000, withBots: false });
+    const code = useCases.createRoom.execute({ playerId: ALICE, name: 'Alice', target: 1000, players: 4, withBots: false });
     useCases.joinRoom.execute({ playerId: BOB, name: 'Bob', code });
     [2, 3].forEach((seat) => useCases.addBot.execute({ playerId: ALICE, seat }));
     useCases.startGame.execute({ playerId: ALICE });
@@ -91,13 +91,30 @@ describe('Cas d’usage', () => {
     expect(viewOf(BOB).isHost).toBe(true);
   });
 
-  it('une partie solo contre les robots se joue jusqu’au bout', () => {
-    useCases.createRoom.execute({ playerId: ALICE, name: 'Alice', target: 500, withBots: true });
+  it.each([4, 3])('une partie à %i contre les robots se joue jusqu’au bout', (players) => {
+    useCases.createRoom.execute({ playerId: ALICE, name: 'Alice', target: 500, players, withBots: true });
+    expect(viewOf(ALICE).seats).toHaveLength(players);
     for (let step = 0; step < 5000 && viewOf(ALICE).game?.phase !== 'gameOver'; step++) {
       if (scheduler.runAutomation()) continue;
       playHumanTurn();
     }
     expect(viewOf(ALICE).game?.phase).toBe('gameOver');
+    const scoringCamps = players === 4 ? 2 : 3;
+    expect(viewOf(ALICE).game?.scores).toHaveLength(scoringCamps);
+  });
+
+  it('une table à 3 est complète avec 3 joueurs', () => {
+    const code = useCases.createRoom.execute({ playerId: ALICE, name: 'Alice', target: 1000, players: 3, withBots: false });
+    useCases.joinRoom.execute({ playerId: BOB, name: 'Bob', code });
+    useCases.addBot.execute({ playerId: ALICE, seat: 2 });
+    expect(() => useCases.joinRoom.execute({ playerId: 'carol-00003', name: 'Carol', code })).toThrow('La table est complète');
+    useCases.startGame.execute({ playerId: ALICE });
+    expect(viewOf(BOB)).toMatchObject({ playerCount: 3, mySeat: 1 });
+    expect(viewOf(BOB).game?.handSizes).toEqual([5, 5, 5]);
+  });
+
+  it('refuse un nombre de joueurs autre que 3 ou 4', () => {
+    expect(() => useCases.createRoom.execute({ playerId: ALICE, name: 'Alice', target: 1000, players: 2, withBots: false })).toThrow('3 ou à 4');
   });
 
   /** Le joueur humain prend si on lui propose au premier tour, sinon passe, et joue sa première carte autorisée. */

@@ -1,31 +1,29 @@
-import { DealResultView } from '@belote/shared';
-import { teamOf } from '../../domain/tableLayout';
+import { DealResultView, RoomView } from '@belote/shared';
+import { winnerLabel } from '../../domain/scoreColumns';
 import { DealResultSummary } from './DealResultDialog';
 import { Dialog } from './Dialog';
 
 interface GameOverDialogProps {
+  room: RoomView;
   winner: number;
   result: DealResultView | null;
   scores: number[];
-  mySeat: number;
   takerName: string;
-  isHost: boolean;
   onReplay(): void;
   onLeave(): void;
 }
 
-export function GameOverDialog({ winner, result, scores, mySeat, takerName, isHost, onReplay, onLeave }: GameOverDialogProps) {
-  const hasWon = winner === teamOf(mySeat);
+export function GameOverDialog({ room, winner, result, scores, takerName, onReplay, onLeave }: GameOverDialogProps) {
   return (
-    <Dialog title={hasWon ? '🏆 Victoire !' : 'Défaite…'}>
-      {result && <DealResultSummary result={result} mySeat={mySeat} takerName={takerName} scores={scores} />}
+    <Dialog title={winnerLabel(room, winner)}>
+      {result && <DealResultSummary result={result} room={room} takerName={takerName} scores={scores} />}
       <div className="dialog__actions">
-        {isHost && (
+        {room.isHost && (
           <button type="button" className="button button--primary" onClick={onReplay}>
             Rejouer
           </button>
         )}
-        {!isHost && <p className="result__note">L'hôte peut relancer une partie.</p>}
+        {!room.isHost && <p className="result__note">L'hôte peut relancer une partie.</p>}
         <button type="button" className="button" onClick={onLeave}>
           Quitter
         </button>

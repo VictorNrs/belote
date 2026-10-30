@@ -11,8 +11,8 @@ export interface Draw {
 export class Deck {
   private constructor(private readonly cards: Cards) {}
 
-  static shuffled(shuffler: Shuffler): Deck {
-    return new Deck(Cards.fullDeck().shuffledWith(shuffler));
+  static shuffled(cards: Cards, shuffler: Shuffler): Deck {
+    return new Deck(cards.shuffledWith(shuffler));
   }
 
   static of(cards: Cards): Deck {

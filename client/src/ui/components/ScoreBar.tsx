@@ -1,24 +1,24 @@
-import { GameView } from '@belote/shared';
+import { GameView, RoomView } from '@belote/shared';
 import { isRedSuit, suitSymbol } from '../../domain/cardFace';
-import { teamLabel, teamsFromMyView } from '../../domain/tableLayout';
+import { scoreColumns } from '../../domain/scoreColumns';
 import { classNames } from '../classNames';
 
 interface ScoreBarProps {
+  room: RoomView;
   game: GameView;
-  mySeat: number;
   takerName: string | null;
   onShowLastTrick(): void;
   onLeave(): void;
 }
 
-export function ScoreBar({ game, mySeat, takerName, onShowLastTrick, onLeave }: ScoreBarProps) {
+export function ScoreBar({ room, game, takerName, onShowLastTrick, onLeave }: ScoreBarProps) {
   const trump = game.contract?.trump;
   return (
     <header className="scorebar">
       <div className="scorebar__scores">
-        {teamsFromMyView(mySeat).map((team) => (
-          <span key={team} className={classNames('score', team === mySeat % 2 && 'score--mine')}>
-            <span className="score__label">{teamLabel(team, mySeat)}</span>
+        {scoreColumns(room).map(({ team, label, isMine }) => (
+          <span key={team} className={classNames('score', isMine && 'score--mine')}>
+            <span className="score__label">{label}</span>
             <strong>{game.scores[team]}</strong>
             <span className="score__tricks">{game.tricksWon[team]} pli(s)</span>
           </span>

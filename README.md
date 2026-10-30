@@ -3,9 +3,10 @@
 Jeu de belote classique multijoueur en ligne, pensé pour le mobile.
 Monorepo **TypeScript** : serveur **Node.js** (Express + Socket.io) et client **React** (Vite).
 
-- Parties à 4 en temps réel : on crée une table, on partage le code (ou le lien), les amis rejoignent.
+- Belote à 4 (en équipes) ou à 3 (chacun pour soi), en temps réel : on crée une table,
+  on partage le code (ou le lien), les amis rejoignent.
 - Des robots complètent les places libres, ou remplacent un joueur qui quitte la partie.
-- Possibilité de jouer seul contre 3 robots.
+- Possibilité de jouer seul contre des robots.
 - Reconnexion automatique : après un rechargement de page, on retrouve sa place.
 
 ## Démarrage
@@ -37,6 +38,8 @@ Variable optionnelle côté client : `VITE_SERVER_URL` si le serveur est héberg
 
 ## Règles implémentées
 
+### Belote à 4
+
 - 32 cartes, 2 équipes de 2 (partenaires face à face), distribution 3 + 2 puis une carte retournée.
 - Enchères en deux tours : au premier on prend la couleur retournée, au second on choisit une autre couleur.
   Si tout le monde passe deux fois, on redistribue (le donneur change).
@@ -49,6 +52,17 @@ Variable optionnelle côté client : `VITE_SERVER_URL` si le serveur est héberg
   Litige (égalité) : les points du preneur sont mis en réserve et vont à l'équipe qui gagne la donne suivante.
 - Partie en 500, 1000 ou 1500 points.
 
+### Belote à 3
+
+Mêmes règles de jeu, avec ces différences :
+
+- 24 cartes (on retire les 7 et les 8), chacun joue pour soi. Le total reste de 162 points.
+- Distribution 3 + 2, une carte retournée ; après la prise, le preneur reçoit la retourne + 2 cartes, les autres 3 :
+  chacun a 8 cartes.
+- Pas de partenaire : sans la couleur demandée, il faut toujours couper (et surcouper si possible).
+- Contrat rempli si le preneur fait au moins 82 points (belote comprise) : chacun marque ses points.
+  Dedans : chaque adversaire marque 81 points. Capot du preneur : 252. Pas de litige.
+
 Non implémenté (pistes d'évolution) : annonces (tierce, cinquante, cent, carrés), coinche, sans-atout / tout-atout.
 
 ## Architecture
@@ -58,10 +72,11 @@ shared/          contrat réseau (types des événements Socket.io et des vues)
 server/src/
   domain/        cœur métier pur, sans aucune dépendance technique
     card/        Suit, Rank, Card, Cards, Deck, Trump, Valuation, Points
-    table/       Seat, Team, TeamPoints
+    table/       Seat, Team, TeamPoints, TableFormat (port)
+    format/      FourPlayerFormat, ThreePlayerFormat : places, équipes, paquet, comptage
     bidding/     Bidding, BiddingRound (1er / 2nd tour), Bid, Contract, BiddingOutcome
     play/        Trick, PlayRules, PlayingDeal, Hands, Belote, CardDealer, ...
-    scoring/     DealScorer, DealResult, Scoreboard
+    scoring/     TeamDealScorer (à 4), SoloDealScorer (à 3), DealResult, Scoreboard
     game/        Game (agrégat) + une classe par phase (pattern State)
     room/        Room (agrégat), participants, places, hôte
     bot/         stratégie des robots
@@ -74,6 +89,10 @@ client/src/
   infrastructure/adaptateurs Socket.io et localStorage
   ui/            composants et écrans React
 ```
+
+Le **format de table** est le seul endroit qui distingue la belote à 3 de la belote à 4 : il fournit les places,
+les équipes (à 3, chaque joueur est sa propre « équipe »), le paquet et la stratégie de comptage. Les règles de jeu,
+les enchères, les phases et les robots sont communs aux deux variantes.
 
 La règle de dépendance est respectée : `domain` ← `application` ← `infrastructure`.
 Le domaine ne connaît ni Socket.io, ni Express, ni le hasard (le mélange est injecté via le port `Shuffler`,

@@ -1,20 +1,16 @@
 import { Points } from '../card/Points';
 import { Team } from './Team';
 
-type PointsByTeam = readonly [Points, Points];
-
-/** Points des deux équipes. */
+/** Points de chacun des camps de la table. */
 export class TeamPoints {
-  static readonly ZERO = new TeamPoints([Points.ZERO, Points.ZERO]);
+  private constructor(private readonly byTeam: readonly Points[]) {}
 
-  private constructor(private readonly byTeam: PointsByTeam) {}
-
-  static forTeam(team: Team, points: Points): TeamPoints {
-    return TeamPoints.ZERO.add(team, points);
+  static zero(teams: readonly Team[]): TeamPoints {
+    return new TeamPoints(teams.map(() => Points.ZERO));
   }
 
   of(team: Team): Points {
-    return this.byTeam[team.toIndex()];
+    return this.byTeam[team.toIndex()] ?? Points.ZERO;
   }
 
   add(team: Team, points: Points): TeamPoints {
@@ -25,17 +21,22 @@ export class TeamPoints {
     return this.mapTeams((team) => this.of(team).plus(other.of(team)));
   }
 
-  /** L'équipe qui a le plus de points, ou null en cas d'égalité. */
+  /** Le camp qui a strictement le plus de points, ou null en cas d'égalité en tête. */
   leader(): Team | null {
-    if (this.of(Team.FIRST).equals(this.of(Team.SECOND))) return null;
-    return this.of(Team.FIRST).isGreaterThan(this.of(Team.SECOND)) ? Team.FIRST : Team.SECOND;
+    const best = this.teams().reduce((leader, team) => (this.of(team).isGreaterThan(this.of(leader)) ? team : leader));
+    const tied = this.teams().filter((team) => this.of(team).equals(this.of(best)));
+    return tied.length === 1 ? best : null;
   }
 
   toNumbers(): number[] {
     return this.byTeam.map((points) => points.toNumber());
   }
 
+  private teams(): Team[] {
+    return this.byTeam.map((_, index) => Team.of(index));
+  }
+
   private mapTeams(compute: (team: Team) => Points): TeamPoints {
-    return new TeamPoints([compute(Team.FIRST), compute(Team.SECOND)]);
+    return new TeamPoints(this.teams().map(compute));
   }
 }

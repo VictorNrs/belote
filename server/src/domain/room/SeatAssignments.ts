@@ -1,5 +1,6 @@
 import { DomainError } from '../shared/DomainError';
 import { Seat } from '../table/Seat';
+import { TableFormat } from '../table/TableFormat';
 import { Participant, ParticipantSnapshot } from './Participant';
 import { PlayerId } from './PlayerId';
 
@@ -11,19 +12,22 @@ export interface SeatSnapshot extends ParticipantSnapshot {
 
 /** Qui est assis à quelle place. */
 export class SeatAssignments {
-  private constructor(private readonly slots: readonly Slot[]) {}
+  private constructor(
+    private readonly format: TableFormat,
+    private readonly slots: readonly Slot[],
+  ) {}
 
-  static empty(): SeatAssignments {
-    return new SeatAssignments(Seat.all().map(() => null));
+  static empty(format: TableFormat): SeatAssignments {
+    return new SeatAssignments(format, format.seats().map(() => null));
   }
 
   seatOf(id: PlayerId): Seat | null {
     const index = this.slots.findIndex((slot) => slot?.isPlayer(id));
-    return index < 0 ? null : Seat.of(index);
+    return index < 0 ? null : this.format.seat(index);
   }
 
   firstFreeSeat(): Seat | null {
-    return Seat.all().find((seat) => this.isFree(seat)) ?? null;
+    return this.format.seats().find((seat) => this.isFree(seat)) ?? null;
   }
 
   isFree(seat: Seat): boolean {
@@ -59,7 +63,7 @@ export class SeatAssignments {
   }
 
   updatePlayer(id: PlayerId, update: (participant: Participant) => Participant): SeatAssignments {
-    return new SeatAssignments(this.slots.map((slot) => (slot?.isPlayer(id) ? update(slot) : slot)));
+    return new SeatAssignments(this.format, this.slots.map((slot) => (slot?.isPlayer(id) ? update(slot) : slot)));
   }
 
   humanIds(): PlayerId[] {
@@ -79,6 +83,6 @@ export class SeatAssignments {
   }
 
   private replace(seat: Seat, slot: Slot): SeatAssignments {
-    return new SeatAssignments(this.slots.map((current, index) => (index === seat.toIndex() ? slot : current)));
+    return new SeatAssignments(this.format, this.slots.map((current, index) => (index === seat.toIndex() ? slot : current)));
   }
 }

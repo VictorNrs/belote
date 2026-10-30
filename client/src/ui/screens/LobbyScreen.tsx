@@ -1,7 +1,7 @@
 import { RoomView, SeatView } from '@belote/shared';
 import { useState } from 'react';
 import { RoomActions } from '../../application/useRoom';
-import { teamLabel, teamOf } from '../../domain/tableLayout';
+import { isTeamGame, seatCaption, tableDescription } from '../../domain/tableLayout';
 import { classNames } from '../classNames';
 
 interface LobbyProps {
@@ -53,8 +53,8 @@ function OccupiedSeat({ seat, occupant, room, actions }: SeatCardProps & { occup
 
 function SeatCard({ seat, occupant, room, actions }: SeatCardProps) {
   return (
-    <li className={classNames('seat', `seat--team${teamOf(seat)}`, seat === room.mySeat && 'seat--mine')}>
-      <span className="seat__team">{teamLabel(teamOf(seat), room.mySeat)}</span>
+    <li className={classNames('seat', isTeamGame(room) && `seat--team${seat % 2}`, seat === room.mySeat && 'seat--mine')}>
+      <span className="seat__team">{seatCaption(seat, room)}</span>
       {occupant ? (
         <OccupiedSeat seat={seat} occupant={occupant} room={room} actions={actions} />
       ) : (
@@ -86,7 +86,9 @@ export function LobbyScreen({ room, actions }: LobbyProps) {
   return (
     <main className="lobby">
       <ShareCode code={room.code} />
-      <p className="lobby__info">Partie en {room.target} points. Les partenaires sont assis face à face.</p>
+      <p className="lobby__info">
+        Partie en {room.target} points. {tableDescription(room)}
+      </p>
       <ul className="seats">
         {room.seats.map((occupant, seat) => (
           <SeatCard key={seat} seat={seat} occupant={occupant} room={room} actions={actions} />
@@ -94,7 +96,7 @@ export function LobbyScreen({ room, actions }: LobbyProps) {
       </ul>
       {room.isHost && (
         <button type="button" className="button button--primary button--block" disabled={!isFull} onClick={() => actions.start()}>
-          {isFull ? 'Lancer la partie' : 'En attente de 4 joueurs…'}
+          {isFull ? 'Lancer la partie' : `En attente de ${room.playerCount} joueurs…`}
         </button>
       )}
       {!room.isHost && <p className="lobby__info">En attente du lancement par l'hôte…</p>}

@@ -1,20 +1,29 @@
-import { ReactNode } from 'react';
-import { DealResultView } from '@belote/shared';
+import { DealResultView, RoomView } from '@belote/shared';
 import { suitSymbol } from '../../domain/cardFace';
 import { outcomeLabel } from '../../domain/dealOutcome';
-import { teamLabel, teamsFromMyView } from '../../domain/tableLayout';
+import { ScoreColumn, scoreColumns } from '../../domain/scoreColumns';
 import { Dialog } from './Dialog';
 
-interface DealResultDialogProps {
+interface DealResultProps {
   result: DealResultView;
-  mySeat: number;
+  room: RoomView;
   takerName: string;
   scores: number[];
-  footer?: ReactNode;
 }
 
-export function DealResultSummary({ result, mySeat, takerName, scores }: Omit<DealResultDialogProps, 'footer'>) {
-  const teams = teamsFromMyView(mySeat);
+function ResultRow({ label, columns, value, className }: { label: string; columns: ScoreColumn[]; value(team: number): string; className?: string }) {
+  return (
+    <tr className={className}>
+      <td>{label}</td>
+      {columns.map(({ team }) => (
+        <td key={team}>{value(team)}</td>
+      ))}
+    </tr>
+  );
+}
+
+export function DealResultSummary({ result, room, takerName, scores }: DealResultProps) {
+  const columns = scoreColumns(room);
   return (
     <>
       <p className="result__outcome">
@@ -24,36 +33,16 @@ export function DealResultSummary({ result, mySeat, takerName, scores }: Omit<De
         <thead>
           <tr>
             <th />
-            {teams.map((team) => (
-              <th key={team}>{teamLabel(team, mySeat)}</th>
+            {columns.map(({ team, label }) => (
+              <th key={team}>{label}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Points aux cartes</td>
-            {teams.map((team) => (
-              <td key={team}>{result.cardPoints[team]}</td>
-            ))}
-          </tr>
-          <tr>
-            <td>Belote</td>
-            {teams.map((team) => (
-              <td key={team}>{result.beloteTeam === team ? '20' : '—'}</td>
-            ))}
-          </tr>
-          <tr className="result__scored">
-            <td>Marqués</td>
-            {teams.map((team) => (
-              <td key={team}>+{result.scored[team]}</td>
-            ))}
-          </tr>
-          <tr className="result__total">
-            <td>Total</td>
-            {teams.map((team) => (
-              <td key={team}>{scores[team]}</td>
-            ))}
-          </tr>
+          <ResultRow label="Points aux cartes" columns={columns} value={(team) => String(result.cardPoints[team] ?? 0)} />
+          <ResultRow label="Belote" columns={columns} value={(team) => (result.beloteTeam === team ? '20' : '—')} />
+          <ResultRow label="Marqués" columns={columns} value={(team) => `+${result.scored[team] ?? 0}`} className="result__scored" />
+          <ResultRow label="Total" columns={columns} value={(team) => String(scores[team] ?? 0)} className="result__total" />
         </tbody>
       </table>
       {result.pendingLitige > 0 && <p className="result__note">{result.pendingLitige} points en réserve pour la prochaine donne.</p>}
@@ -61,16 +50,14 @@ export function DealResultSummary({ result, mySeat, takerName, scores }: Omit<De
   );
 }
 
-export function DealResultDialog(props: DealResultDialogProps) {
+export function DealResultDialog(props: DealResultProps) {
   return (
     <Dialog title="Fin de la donne">
       <DealResultSummary {...props} />
-      {props.footer ?? (
-        <div className="result__next">
-          <span>Donne suivante…</span>
-          <span className="progress" />
-        </div>
-      )}
+      <div className="result__next">
+        <span>Donne suivante…</span>
+        <span className="progress" />
+      </div>
     </Dialog>
   );
 }

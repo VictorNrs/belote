@@ -6,7 +6,7 @@ export type SuitCode = 'S' | 'H' | 'D' | 'C';
 export type RankCode = '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
 export type CardCode = string;
 export type SeatIndex = 0 | 1 | 2 | 3;
-export type TeamIndex = 0 | 1;
+export type PlayerCount = 3 | 4;
 
 export type GamePhase = 'bidding' | 'playing' | 'trickComplete' | 'dealEnd' | 'gameOver';
 export type DealOutcome = 'made' | 'failed' | 'capot' | 'capotAgainst' | 'litige';
@@ -72,6 +72,7 @@ export interface SeatView {
 
 export interface RoomView {
   code: string;
+  playerCount: number;
   mySeat: number;
   isHost: boolean;
   target: number;
@@ -85,6 +86,7 @@ export type Ack<T = void> = (result: AckResult<T>) => void;
 export interface CreateRoomPayload {
   name: string;
   target: number;
+  players: PlayerCount;
   withBots: boolean;
 }
 
@@ -119,3 +121,4 @@ export interface HandshakeAuth {
 }
 
 export const GAME_TARGETS = [500, 1000, 1500] as const;
+export const PLAYER_COUNTS: readonly PlayerCount[] = [4, 3];

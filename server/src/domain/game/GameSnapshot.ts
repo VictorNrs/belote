@@ -34,20 +34,21 @@ export interface GameSnapshot {
   announcement: AnnouncementSnapshot | null;
 }
 
-export type DealSnapshotDefaults = Omit<GameSnapshot, 'phase' | 'dealer' | 'scores' | 'target' | 'pendingLitige' | 'announcement'>;
+export type DealSnapshotDefaults = Omit<
+  GameSnapshot,
+  'phase' | 'dealer' | 'handSizes' | 'tricksWon' | 'scores' | 'target' | 'pendingLitige' | 'announcement'
+>;
 
 export const NO_DEAL_DETAILS: DealSnapshotDefaults = {
   turn: null,
   hand: [],
   legalCards: [],
-  handSizes: [0, 0, 0, 0],
   proposedCard: null,
   biddingRound: null,
   passedSeats: [],
   contract: null,
   trick: [],
   lastTrick: null,
-  tricksWon: [0, 0],
   lastResult: null,
   winner: null,
 };

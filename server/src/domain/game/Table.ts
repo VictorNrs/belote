@@ -18,7 +18,7 @@ export class Table {
   ) {}
 
   static initial(settings: GameSettings, firstDealer: Seat): Table {
-    return new Table(firstDealer, Scoreboard.START, settings, Announcements.NONE);
+    return new Table(firstDealer, Scoreboard.start(firstDealer.format().teams()), settings, Announcements.NONE);
   }
 
   dealerSeat(): Seat {
@@ -50,8 +50,11 @@ export class Table {
   }
 
   snapshot(phase: GamePhase): GameSnapshot {
+    const format = this.dealer.format();
     return {
       ...NO_DEAL_DETAILS,
+      handSizes: format.seats().map(() => 0),
+      tricksWon: format.teams().map(() => 0),
       phase,
       dealer: this.dealer.toIndex(),
       scores: this.scoreboard.scores(),

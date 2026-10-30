@@ -1,4 +1,5 @@
 import { Trump } from '../card/Trump';
+import { TableFormat } from '../table/TableFormat';
 import { CollectedTricks } from './CollectedTricks';
 import { PlayedCard, PlayedCardSnapshot } from './PlayedCard';
 import { Trick } from './Trick';
@@ -16,8 +17,8 @@ export class TrickHistory {
     private readonly collected: CollectedTricks,
   ) {}
 
-  static start(): TrickHistory {
-    return new TrickHistory(Trick.EMPTY, null, CollectedTricks.NONE);
+  static start(format: TableFormat): TrickHistory {
+    return new TrickHistory(Trick.empty(format.playerCount()), null, CollectedTricks.none(format.teams()));
   }
 
   current(): Trick {
@@ -32,7 +33,7 @@ export class TrickHistory {
     const winner = this.currentTrick.winner(trump);
     const previous = { cards: this.currentTrick.toSnapshot(), winner: winner.toIndex() };
     const collected = this.collected.collect(winner.team(), this.currentTrick.points(trump));
-    return new TrickHistory(Trick.EMPTY, previous, collected);
+    return new TrickHistory(this.currentTrick.next(), previous, collected);
   }
 
   isTrickComplete(): boolean {

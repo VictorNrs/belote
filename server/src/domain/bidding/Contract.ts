@@ -31,10 +31,6 @@ export class Contract {
     return this.takerSeat.team();
   }
 
-  defendingTeam(): Team {
-    return this.takingTeam().opponent();
-  }
-
   toSnapshot(): ContractSnapshot {
     return { taker: this.takerSeat.toIndex(), trump: this.trumpSuit.toCode() };
   }

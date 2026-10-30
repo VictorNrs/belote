@@ -1,7 +1,7 @@
 import { AnnouncementView, GameView, RoomView } from '@belote/shared';
 import { useState } from 'react';
 import { RoomActions } from '../../application/useRoom';
-import { positionOf } from '../../domain/tableLayout';
+import { otherSeats, positionOf } from '../../domain/tableLayout';
 import { BiddingPanel } from '../components/BiddingPanel';
 import { DealResultDialog } from '../components/DealResultDialog';
 import { GameOverDialog } from '../components/GameOverDialog';
@@ -23,14 +23,13 @@ const LEAVE_CONFIRMATION = 'Quitter la partie ? Un robot prendra votre place.';
 const nameOf = (room: RoomView, seat: number | null | undefined): string => (seat == null ? '—' : (room.seats[seat]?.name ?? '—'));
 
 function Felt({ room, game, actions, announcement }: TableProps & { announcement: AnnouncementView | null }) {
-  const others = [1, 2, 3].map((offset) => (room.mySeat + offset) % 4);
   const bubbleFor = (seat: number) => (announcement?.seat === seat ? announcement.text : null);
   return (
     <section className="felt">
-      {others.map((seat) => (
-        <PlayerSpot key={seat} seat={seat} position={positionOf(seat, room.mySeat)} player={room.seats[seat] ?? null} game={game} bubble={bubbleFor(seat)} />
+      {otherSeats(room).map((seat) => (
+        <PlayerSpot key={seat} seat={seat} position={positionOf(seat, room)} player={room.seats[seat] ?? null} game={game} bubble={bubbleFor(seat)} />
       ))}
-      <TrickView trick={game.trick} mySeat={room.mySeat} />
+      <TrickView trick={game.trick} room={room} />
       {game.phase === 'bidding' && <BiddingPanel game={game} mySeat={room.mySeat} bidderName={nameOf(room, game.turn)} onBid={actions.bid} />}
       {announcement?.seat === null && <div className="toast">{announcement.text}</div>}
       <PlayerSpot seat={room.mySeat} position="bottom" player={room.seats[room.mySeat] ?? null} game={game} bubble={bubbleFor(room.mySeat)} />
@@ -40,13 +39,12 @@ function Felt({ room, game, actions, announcement }: TableProps & { announcement
 
 function EndOfDealDialogs({ room, game, actions }: TableProps) {
   const takerName = nameOf(room, game.lastResult?.contract.taker);
-  const leave = () => actions.leave();
   if (game.phase === 'gameOver' && game.winner !== null) {
-    const props = { winner: game.winner, result: game.lastResult, scores: game.scores, mySeat: room.mySeat, takerName, isHost: room.isHost };
-    return <GameOverDialog {...props} onReplay={() => actions.start()} onLeave={leave} />;
+    const props = { room, winner: game.winner, result: game.lastResult, scores: game.scores, takerName };
+    return <GameOverDialog {...props} onReplay={() => actions.start()} onLeave={() => actions.leave()} />;
   }
   if (game.phase !== 'dealEnd' || !game.lastResult) return null;
-  return <DealResultDialog result={game.lastResult} mySeat={room.mySeat} takerName={takerName} scores={game.scores} />;
+  return <DealResultDialog result={game.lastResult} room={room} takerName={takerName} scores={game.scores} />;
 }
 
 export function TableScreen({ room, game, actions }: TableProps) {
@@ -57,8 +55,8 @@ export function TableScreen({ room, game, actions }: TableProps) {
   return (
     <div className="table-screen">
       <ScoreBar
+        room={room}
         game={game}
-        mySeat={room.mySeat}
         takerName={game.contract ? nameOf(room, game.contract.taker) : null}
         onShowLastTrick={() => setShowLastTrick(true)}
         onLeave={leave}
@@ -67,9 +65,7 @@ export function TableScreen({ room, game, actions }: TableProps) {
       <p className="turn-hint">{isMyTurn ? 'À vous de jouer !' : ' '}</p>
       <HandView cards={game.hand} legalCards={game.legalCards} canPlay={isMyTurn} onPlay={actions.play} />
       <EndOfDealDialogs room={room} game={game} actions={actions} />
-      {showLastTrick && game.lastTrick && (
-        <LastTrickDialog trick={game.lastTrick} mySeat={room.mySeat} seats={room.seats} onClose={() => setShowLastTrick(false)} />
-      )}
+      {showLastTrick && game.lastTrick && <LastTrickDialog trick={game.lastTrick} room={room} onClose={() => setShowLastTrick(false)} />}
     </div>
   );
 }

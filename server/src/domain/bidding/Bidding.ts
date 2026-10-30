@@ -23,7 +23,7 @@ export class Bidding {
   ) {}
 
   static open(dealer: Seat, proposed: Card): Bidding {
-    return new Bidding(proposed, dealer.next(), BiddingRound.first(), Passes.NONE);
+    return new Bidding(proposed, dealer.next(), BiddingRound.first(), Passes.none(dealer.format().playerCount()));
   }
 
   place(seat: Seat, bid: Bid): BiddingOutcome {

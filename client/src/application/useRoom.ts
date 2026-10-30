@@ -1,9 +1,15 @@
-import { BidPayload, CardCode, RoomView } from '@belote/shared';
+import { BidPayload, CardCode, PlayerCount, RoomView } from '@belote/shared';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useServices } from './GameContext';
 
+export interface NewTable {
+  target: number;
+  players: PlayerCount;
+  withBots: boolean;
+}
+
 export interface RoomActions {
-  createRoom(target: number, withBots: boolean): Promise<void>;
+  createRoom(table: NewTable): Promise<void>;
   joinRoom(code: string): Promise<void>;
   sit(seat: number): Promise<void>;
   addBot(seat: number): Promise<void>;
@@ -41,7 +47,7 @@ export function useRoom(): RoomSession {
 
   const actions = useMemo<RoomActions>(
     () => ({
-      createRoom: (target, withBots) => run(() => gateway.createRoom({ name: profile.name(), target, withBots })),
+      createRoom: (table) => run(() => gateway.createRoom({ ...table, name: profile.name() })),
       joinRoom: (code) => run(() => gateway.joinRoom({ code, name: profile.name() })),
       sit: (seat) => run(() => gateway.sit(seat)),
       addBot: (seat) => run(() => gateway.addBot(seat)),

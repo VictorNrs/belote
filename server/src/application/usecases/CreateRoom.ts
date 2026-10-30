@@ -1,10 +1,11 @@
 import { GAME_TARGETS } from '@belote/shared';
 import { Points } from '../../domain/card/Points';
+import { TableFormats } from '../../domain/format/TableFormats';
+import { HumanPlayer } from '../../domain/room/Participant';
 import { PlayerId } from '../../domain/room/PlayerId';
 import { PlayerName } from '../../domain/room/PlayerName';
-import { Room } from '../../domain/room/Room';
+import { Room, RoomRules } from '../../domain/room/Room';
 import { RoomCode } from '../../domain/room/RoomCode';
-import { Seat } from '../../domain/table/Seat';
 import { ApplicationError } from '../ApplicationError';
 import { RoomCodeGenerator } from '../ports/RoomCodeGenerator';
 import { RoomRepository } from '../ports/RoomRepository';
@@ -16,6 +17,7 @@ import { PlayerCommand } from './SeatedPlayerUseCase';
 export interface CreateRoomCommand extends PlayerCommand {
   name: string;
   target: number;
+  players: number;
   withBots: boolean;
 }
 
@@ -33,17 +35,16 @@ export class CreateRoom {
   /** @returns le code de la salle créée */
   execute(command: CreateRoomCommand): string {
     const playerId = PlayerId.of(command.playerId);
-    const room = Room.open(this.uniqueCode(), playerId, PlayerName.of(command.name), this.validTarget(command.target));
+    const host = HumanPlayer.join(playerId, PlayerName.of(command.name));
+    const room = Room.open(this.uniqueCode(), host, this.rulesFrom(command));
     this.leaveRoom.leaveIfSeated(playerId);
-    if (command.withBots) this.fillWithBotsAndStart(room, playerId);
+    if (command.withBots) this.fillWithBotsAndStart(room, playerId, command.players);
     this.roomSync.sync(room);
     return room.roomCode().toString();
   }
 
-  private fillWithBotsAndStart(room: Room, host: PlayerId): void {
-    Seat.all()
-      .filter((seat) => seat.toIndex() !== 0)
-      .forEach((seat) => room.addBot(host, seat));
+  private fillWithBotsAndStart(room: Room, host: PlayerId, players: number): void {
+    Array.from({ length: players - 1 }, (_, offset) => room.seatAt(offset + 1)).forEach((seat) => room.addBot(host, seat));
     room.start(host, this.games.create);
   }
 
@@ -54,8 +55,8 @@ export class CreateRoom {
     return code;
   }
 
-  private validTarget(target: number): Points {
-    if (!(GAME_TARGETS as readonly number[]).includes(target)) throw new ApplicationError('Objectif de points invalide');
-    return new Points(target);
+  private rulesFrom(command: CreateRoomCommand): RoomRules {
+    if (!(GAME_TARGETS as readonly number[]).includes(command.target)) throw new ApplicationError('Objectif de points invalide');
+    return { target: new Points(command.target), format: TableFormats.forPlayerCount(command.players) };
   }
 }

@@ -5,12 +5,14 @@ import { DealResult } from './DealResult';
 
 /** Tableau des scores cumulés de la partie. */
 export class Scoreboard {
-  static readonly START = new Scoreboard(TeamPoints.ZERO, Points.ZERO);
-
   private constructor(
     private readonly totals: TeamPoints,
     private readonly litige: Points,
   ) {}
+
+  static start(teams: readonly Team[]): Scoreboard {
+    return new Scoreboard(TeamPoints.zero(teams), Points.ZERO);
+  }
 
   record(result: DealResult): Scoreboard {
     return new Scoreboard(this.totals.plus(result.scored()), result.pendingLitige());

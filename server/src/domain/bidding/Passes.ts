@@ -18,16 +18,21 @@ class Pass {
 
 /** Historique des « je passe » d'une donne. */
 export class Passes {
-  static readonly NONE = new Passes([]);
+  private constructor(
+    private readonly playerCount: number,
+    private readonly passes: readonly Pass[],
+  ) {}
 
-  private constructor(private readonly passes: readonly Pass[]) {}
+  static none(playerCount: number): Passes {
+    return new Passes(playerCount, []);
+  }
 
   record(seat: Seat, round: BiddingRound): Passes {
-    return new Passes([...this.passes, new Pass(seat, round)]);
+    return new Passes(this.playerCount, [...this.passes, new Pass(seat, round)]);
   }
 
   everyonePassedIn(round: BiddingRound): boolean {
-    return this.in(round).length === Seat.count();
+    return this.in(round).length === this.playerCount;
   }
 
   seatsIn(round: BiddingRound): number[] {

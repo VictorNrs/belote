@@ -1,49 +1,34 @@
-import { DomainError } from '../shared/DomainError';
+import type { TableFormat } from './TableFormat';
 import { Team } from './Team';
 
 export type SeatIndex = 0 | 1 | 2 | 3;
 
-const SEAT_COUNT = 4;
-
-/** Place autour de la table, numérotée dans le sens du jeu. */
+/** Place autour de la table, numérotée dans le sens du jeu. Les places sont créées par leur format de table. */
 export class Seat {
-  private static readonly SEATS: readonly Seat[] = [0, 1, 2, 3].map((index) => new Seat(index as SeatIndex));
-
-  private constructor(private readonly index: SeatIndex) {}
-
-  static all(): readonly Seat[] {
-    return Seat.SEATS;
-  }
-
-  static count(): number {
-    return SEAT_COUNT;
-  }
-
-  static of(index: number): Seat {
-    const seat = Seat.SEATS[index];
-    if (!seat) throw new DomainError(`Place inconnue : ${index}`);
-    return seat;
-  }
+  constructor(
+    private readonly index: SeatIndex,
+    private readonly table: TableFormat,
+  ) {}
 
   next(): Seat {
-    return Seat.of((this.index + 1) % SEAT_COUNT);
-  }
-
-  partner(): Seat {
-    return Seat.of((this.index + 2) % SEAT_COUNT);
+    return this.table.seat((this.index + 1) % this.table.playerCount());
   }
 
   team(): Team {
-    return Team.of(this.index % 2);
+    return this.table.teamOf(this.index);
   }
 
   isPartnerOf(other: Seat): boolean {
-    return this.partner().equals(other);
+    return this.table.arePartners(this.index, other.index);
   }
 
-  /** Les quatre places dans l'ordre du jeu, en commençant par celle-ci. */
+  /** Toutes les places dans l'ordre du jeu, en commençant par celle-ci. */
   roundFromHere(): readonly Seat[] {
-    return Seat.SEATS.map((_, offset) => Seat.of((this.index + offset) % SEAT_COUNT));
+    return this.table.seats().map((_, offset) => this.table.seat((this.index + offset) % this.table.playerCount()));
+  }
+
+  format(): TableFormat {
+    return this.table;
   }
 
   equals(other: Seat): boolean {
